@@ -4,8 +4,8 @@
 #include<time.h>
 #include<stdlib.h>
 using namespace std;
-#define datanum 10000	//数据个数
-#define period 1000		//生成随机数时重置种子的周期
+#define datanum 1000000	//数据个数
+#define period 10000		//生成随机数时重置种子的周期
 #define InsertBorder 1000	//快排转直接插入排序的边界
 //父进程对待排序列进行快排划分，划分好的两段序列交给子进程
 //子序列长度小于1000时，处理线程进行直接插入排序
@@ -71,7 +71,6 @@ typedef struct{
 	int left;
 	int right;
 	int pos;
-	int threadid;
 }DATA;
 //int data[datanum];
 HANDLE *hmutex;	//访问共享内存的互斥量，用于进程之间的同步
@@ -94,16 +93,15 @@ DWORD WINAPI QuickSort(LPVOID lpparam){
 		_DATA[1]=*PDATA;
 		_DATA[0].right=PDATA->pos-1;
 		_DATA[1].left=PDATA->pos+1;
-		_DATA[0].threadid+=1;
-		_DATA[1].threadid+=1;
 		HANDLE downthread[2];//其他级划分进程句柄
 		DWORD downthread0ID,downthread1ID;
 		ReleaseSemaphore(threadnum,1,NULL);	
 		downthread[0]=CreateThread(NULL,0,QuickSort,&_DATA[0],0,&downthread0ID);
+		WaitForSingleObject(downthread[0],INFINITE);
+		CloseHandle(downthread[0]);
 		downthread[1]=CreateThread(NULL,0,QuickSort,&_DATA[1],0,&downthread1ID);
-		WaitForMultipleObjects(2,downthread,true,INFINITE);
-		for(int i=0;i<2;i++)
-			CloseHandle(downthread[i]);
+		WaitForSingleObject(downthread[1],INFINITE);
+		CloseHandle(downthread[1]);
 	}
 	else ReleaseSemaphore(threadnum,1,NULL);	 
 	return 0;
@@ -114,7 +112,6 @@ int main(){
 	_DATA.left=0;
 	_DATA.pos=0;
 	_DATA.right=datanum-1;
-	_DATA.threadid=0;
 //	hmutex[0]=CreateMutex(NULL,FALSE,NULL);
 	HANDLE topthread;	//第一级划分线程句柄
 	DWORD topthreadID;
