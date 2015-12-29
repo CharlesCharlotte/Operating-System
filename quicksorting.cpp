@@ -71,9 +71,10 @@ typedef struct{
 	int left;
 	int right;
 	int pos;
+	int threadid;
 }DATA;
 //int data[datanum];
-//HANDLE *hmutex;	//访问共享内存的互斥量，用于进程之间的同步
+HANDLE *hmutex;	//访问共享内存的互斥量，用于进程之间的同步
 HANDLE threadnum=CreateSemaphore(NULL,20,INFINITE,"ThreadNum");	//限制线程数量的信号量
 DATA *PDATA;
 DATA _DATA[2];
@@ -93,6 +94,8 @@ DWORD WINAPI QuickSort(LPVOID lpparam){
 		_DATA[1]=*PDATA;
 		_DATA[0].right=PDATA->pos-1;
 		_DATA[1].left=PDATA->pos+1;
+		_DATA[0].threadid+=1;
+		_DATA[1].threadid+=1;
 		HANDLE downthread[2];//其他级划分进程句柄
 		DWORD downthread0ID,downthread1ID;
 		ReleaseSemaphore(threadnum,1,NULL);	
@@ -111,6 +114,7 @@ int main(){
 	_DATA.left=0;
 	_DATA.pos=0;
 	_DATA.right=datanum-1;
+	_DATA.threadid=0;
 //	hmutex[0]=CreateMutex(NULL,FALSE,NULL);
 	HANDLE topthread;	//第一级划分线程句柄
 	DWORD topthreadID;
